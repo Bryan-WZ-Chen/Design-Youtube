@@ -1,30 +1,50 @@
 import express from "express";
-import ffmpeg from "fluent-ffmpeg";
-
+import { convertVideo, deleteProcessedVideo, deleteRawVideo, download, setupDirectories, upload } from "./storage";
 const app = express();
 app.use(express.json());
+setupDirectories();
 
+app.post("/process-video", async (req, res) => {
+    const pubSubMessage = req.body.message;
+    let data;
+    try {
+        data = Buffer.from(pubSubMessage.data, 'base64').toString().trim();
+        data = JSON.parse(data);
 
-app.post("/process-video", (req, res) => {
-    // Get path of the input video file from the request body
-    // already uploaded
-    const inputFilePath = req.body.inputFilePath;
-    const outputFilePath = req.body.outputFilePath;
-
-    if (!inputFilePath || !outputFilePath) {
-        return res.status(400).send("Bad request");
+        if (!data.name) {
+            throw new Error('Invalid message payload');
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(400).send(`Bad Request: ${err}`);
     }
 
-    ffmpeg(inputFilePath)
-        .outputOptions("-vf", "scale=iw*min(360/ih\\,1):-2")   // Set the video resolution to 360p
-        .on("end", () => {
-            res.status(200).send("Processing finished successfully");
-        })
-        .on("error", (err) => {
-            console.log(`An error occurred: ${err.message}`);
-            res.status(500).send(`Internal server error: ${err.message}`);
-        })
-        .save(outputFilePath);
+    const rawVideoName = data.name;
+    const processedVideoName = `processed-${rawVideoName}`;
+
+    // download the raw video from the cloud storage
+    await download(rawVideoName);
+    try {
+        await convertVideo(rawVideoName, processedVideoName);
+    } catch(err) {
+        // Careful: deletion is async
+        await Promise.all([
+            deleteRawVideo(rawVideoName),
+            deleteProcessedVideo(processedVideoName)
+        ]);
+        console.error(err);
+        return res.status(500).send(`Internal Server Error: ${err}`);
+    }
+
+    await upload(processedVideoName);
+
+    // clean up
+    await Promise.all([
+        deleteRawVideo(rawVideoName),
+        deleteProcessedVideo(processedVideoName)
+    ]);
+
+    res.status(200).send("Video processed successfully");
 });
 
 const port = process.env.PORT || 3000;
