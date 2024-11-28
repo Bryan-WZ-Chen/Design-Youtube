@@ -4,10 +4,10 @@ import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, User 
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-    appId: process.env.REACT_APP_FIREBASE_APP_ID,
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
   
 
