@@ -1,15 +1,23 @@
 import styles from "./page.module.css";
+import { getVideos } from "./firebase/function";
+import Link from "next/link";
+import Image from "next/image";
 
-export default function Home() {
+export default async function Home() {
+  const videos = await getVideos();
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <ol>
-          <li>
-            Get started by editing <code>app/page.tsx</code>.
-          </li>
-        </ol>
+      <main>
+        {
+          videos.map((video) => (
+            <Link href={`/watch?v=${video.filename}`} key={video.id}>
+              <Image src={'/thumbnail.png'} alt='video' width={120} height={80} 
+                className={styles.thumbnail} />
+            </Link>
+          ))
+        }
       </main>
-    </div>
   );
 }
+
+export const revalidate = 30;
